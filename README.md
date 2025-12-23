@@ -173,7 +173,7 @@ If you use Bilingual-SQL-Coder in your research, please cite:
 ```bibtex
 @software{bilingual_sql_coder,
   title={Bilingual-SQL-Coder: A Text-to-SQL Framework},
-  author={Tygao, Dywang},
+  author={Tianyu Gao, Deyang Wang, Yiwen Ma},
   year={2025},
   url={https://github.com/GodRayyy/Bilingual-SQL-Coder}
 }
@@ -358,7 +358,7 @@ python run_full_evaluation.py \
 ```bibtex
 @software{bilingual_sql_coder,
   title={Bilingual-SQL-Coder: A Text-to-SQL Framework},
-  author={Tygao, Dywang},
+  author={Tianyu Gao, Deyang Wang, Yiwen Ma},
   year={2025},
   url={https://github.com/GodRayyy/Bilingual-SQL-Coder}
 }
