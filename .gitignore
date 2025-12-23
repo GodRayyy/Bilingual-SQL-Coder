@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project specific
+train_output/
+results/
+wandb/
+lightning_logs/
+.cache/
+*.log
+
+# Data (keep as example, but ignore large datasets)
+data/
+*.json
+*.jsonl
+cspider/
+spider/
+
+# Model checkpoints (very large)
+checkpoint/
+checkpoints/
+*.pt
+*.pth
+
+# Temporary files
+*.tmp
+*.bak
+
+# Environment variables
+.env
+.env.local

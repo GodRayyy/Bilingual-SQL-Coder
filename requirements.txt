@@ -1,0 +1,34 @@
+# Bilingual-SQL-Coder Requirements
+# Complete dependencies for the entire project
+
+# Core dependencies
+torch>=2.0.0
+transformers>=4.30.0
+
+# Model training and inference
+peft>=0.5.0  # LoRA and DoRA support
+accelerate>=0.20.0  # Multi-GPU training
+bitsandbytes>=0.40.0  # 8-bit optimization
+
+# Data processing
+datasets>=2.14.0  # Hugging Face datasets
+pandas>=2.0.0
+
+# API and LLM
+openai>=1.0.0  # Qwen API compatible with OpenAI SDK
+
+# Web Application
+streamlit>=1.28.0  # Web UI framework
+
+# Utilities
+tqdm>=4.65.0  # Progress bars
+scipy>=1.10.0  # Scientific computing
+
+# Training framework
+swift  # Alibaba SWIFT for efficient training
+
+# Optional: Database and validation
+# sqlite3 is built-in Python module
+
+# Optional: Concurrent processing
+# concurrent.futures is built-in Python module
