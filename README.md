@@ -5,7 +5,7 @@ A comprehensive Text-to-SQL framework supporting bilingual (English & Chinese) d
 ---
 
 ### 😮新发布！
-- 权重已经开源到👐Hugging Face：[https://huggingface.co/even-ma/Bilingual-SQL-Coder](https://huggingface.co/GodRayyyy/Bilingual-SQL-Coder)
+- 权重已经开源到👐Hugging Face：https://huggingface.co/GodRayyyy/Bilingual-SQL-Coder
 
 ---
 
