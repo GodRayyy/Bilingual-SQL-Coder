@@ -2,6 +2,11 @@
 
 A comprehensive Text-to-SQL framework supporting bilingual (English & Chinese) datasets with training, data processing, deployment, and evaluation capabilities.
 
+### 😮新发布！
+- 权重已经开源到👐Hugging Face：https://huggingface.co/even-ma/Bilingual-SQL-Coder
+
+---
+
 [English](#english) | [中文](#中文)
 
 ## English
