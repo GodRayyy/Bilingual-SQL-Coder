@@ -257,7 +257,9 @@ if not st.session_state.messages:
 
 # --- 聊天记录渲染 ---
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
+    # 根据角色选择头像
+    avatar_path = "assets/user_icon.png" if msg["role"] == "user" else "assets/bot_icon.png"
+    with st.chat_message(msg["role"], avatar=avatar_path):
         # 1. 渲染文本内容
         if "is_sql" in msg and msg["is_sql"]:
             # 如果是 SQL 消息，不再直接显示 Code，而是说明一下
@@ -288,11 +290,11 @@ if prompt := st.chat_input("在此输入你的业务问题..."):
     else:
         # 1. 用户消息上屏
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
+        with st.chat_message("user", avatar="assets/user_icon.png"):
             st.markdown(prompt)
 
         # 2. 模型推理
-        with st.chat_message("assistant"):
+        with st.chat_message("assistant", avatar="assets/bot_icon.png"):
             # 创建占位符，用于显示进度
             status_container = st.empty()
             
