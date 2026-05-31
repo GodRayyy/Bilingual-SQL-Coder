@@ -17,9 +17,11 @@ A comprehensive Text-to-SQL framework supporting bilingual (English & Chinese) d
 
 Bilingual-SQL-Coder is an end-to-end solution for Text-to-SQL tasks, supporting:
 - 🧹 **Data Processing**: Bilingual translation, data cleaning, and synthesis
-- 🎓 **Model Training**: SFT (Supervised Fine-Tuning) with LoRA/DoRA on large language models
+- 🎓 **Model Training**: SFT (Supervised Fine-Tuning) with LoRA/DoRA on Qwen3.5 models
 - 🚀 **Application**: Web-based SQL generation interface
 - 📊 **Evaluation**: Comprehensive evaluation metrics and data generation
+
+The current codebase defaults to the public **Qwen3.5-4B** model ID. Set `BILINGUAL_SQL_CODER_MODEL_PATH` if you use a local model directory.
 
 ### Project Structure
 
@@ -57,6 +59,9 @@ cd Bilingual-SQL-Coder
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Optional: override the default Qwen3.5 model path
+export BILINGUAL_SQL_CODER_MODEL_PATH="/path/to/Qwen3.5-4B"
 ```
 
 #### 2. Data Processing (data_expert)
@@ -94,13 +99,14 @@ python main.py run --data spider_train.json --schema tables.json
 
 #### 3. Model Training (sft)
 
-Train models using LoRA/DoRA on Qwen models:
+Train models using LoRA/DoRA on Qwen3.5:
 
 ```bash
 cd sft
 
 # Modify training configuration in train_only_text_DoRA_all.sh
 # Set your model path, data path, and training parameters
+export BILINGUAL_SQL_CODER_MODEL_PATH="/path/to/Qwen3.5-4B"
 
 # Run training
 bash train_only_text_DoRA_all.sh
@@ -108,7 +114,8 @@ bash train_only_text_DoRA_all.sh
 
 **Configuration options in the shell script:**
 - `CUDA_VISIBLE_DEVICES`: GPU selection
-- `MODEL_ID`: Base model path
+- `BILINGUAL_SQL_CODER_MODEL_PATH`: Base Qwen3.5 model path
+- `BILINGUAL_SQL_CODER_OUTPUT_DIR`: Training output directory
 - `TRAIN_DATA`: Training data path
 - `EVAL_DATA`: Evaluation data path
 
@@ -122,9 +129,12 @@ cd sft
 # Inference with trained model
 python inference_only_text.py \
   --model_type tuned \
+  --base_model_id /path/to/Qwen3.5-4B \
   --checkpoint_dir ./path/to/checkpoint \
   --output_file predictions.json
 ```
+
+If you only want to run the Qwen3.5 base model, use `--model_type base` and omit `--checkpoint_dir`.
 
 #### 5. Web Application (application)
 
@@ -148,15 +158,16 @@ cd evaluation
 
 # Run full evaluation
 python run_full_evaluation.py \
-  --prediction_file predictions.json \
-  --gold_file dev_gold.sql
+  --model_type base \
+  --base_model_id /path/to/Qwen3.5-4B \
+  --datasets Spider,CSpider,Bird,DuSQL \
+  --etype all
 ```
 
 ### Supported Models
 
-- **Qwen3-4B-Instruct**: Lightweight, fast inference
-- **Qwen3-8B-Instruct**: Balanced performance and speed
-- **Qwen3-VL-8B-Instruct**: Vision-Language support (for future features)
+- **Qwen3.5-4B**: Default model for training, inference, evaluation, and the Streamlit application
+- **Qwen3.5 LoRA/DoRA checkpoints**: Supported after re-training adapters on the Qwen3.5 base model
 
 ### Dataset Support
 
@@ -202,9 +213,11 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 Bilingual-SQL-Coder 是一个端到端的Text-to-SQL任务解决方案，支持：
 - 🧹 **数据处理**：双语翻译、数据清洗和合成
-- 🎓 **模型训练**：在大型语言模型上进行SFT（有监督微调）
+- 🎓 **模型训练**：在 Qwen3.5 模型上进行SFT（有监督微调）
 - 🚀 **应用部署**：基于Web的SQL生成界面
 - 📊 **效果评估**：完整的评估指标和数据生成
+
+当前代码默认适配公开 **Qwen3.5-4B** 模型 ID。如使用本地模型目录，可设置 `BILINGUAL_SQL_CODER_MODEL_PATH`。
 
 ### 项目结构
 
@@ -242,6 +255,9 @@ cd Bilingual-SQL-Coder
 
 # 安装依赖
 pip install -r requirements.txt
+
+# 可选：覆盖默认 Qwen3.5 模型路径
+export BILINGUAL_SQL_CODER_MODEL_PATH="/path/to/Qwen3.5-4B"
 ```
 
 #### 2. 数据处理 (data_expert)
@@ -279,13 +295,14 @@ python main.py run --data spider_train.json --schema tables.json
 
 #### 3. 模型训练 (sft)
 
-使用LoRA/DoRA在Qwen模型上进行微调：
+使用LoRA/DoRA在Qwen3.5模型上进行微调：
 
 ```bash
 cd sft
 
 # 修改train_only_text_DoRA_all.sh中的配置
 # 设置模型路径、数据路径和训练参数
+export BILINGUAL_SQL_CODER_MODEL_PATH="/path/to/Qwen3.5-4B"
 
 # 开始训练
 bash train_only_text_DoRA_all.sh
@@ -293,7 +310,8 @@ bash train_only_text_DoRA_all.sh
 
 **shell脚本中的配置选项：**
 - `CUDA_VISIBLE_DEVICES`: GPU设备选择
-- `MODEL_ID`: 基础模型路径
+- `BILINGUAL_SQL_CODER_MODEL_PATH`: Qwen3.5基础模型路径
+- `BILINGUAL_SQL_CODER_OUTPUT_DIR`: 训练输出目录
 - `TRAIN_DATA`: 训练数据路径
 - `EVAL_DATA`: 评估数据路径
 
@@ -307,9 +325,12 @@ cd sft
 # 使用微调后的模型进行推理
 python inference_only_text.py \
   --model_type tuned \
+  --base_model_id /path/to/Qwen3.5-4B \
   --checkpoint_dir ./path/to/checkpoint \
   --output_file predictions.json
 ```
+
+如果只运行 Qwen3.5 基座模型，可使用 `--model_type base` 并省略 `--checkpoint_dir`。
 
 #### 5. Web应用 (application)
 
@@ -333,15 +354,16 @@ cd evaluation
 
 # 运行完整评估
 python run_full_evaluation.py \
-  --prediction_file predictions.json \
-  --gold_file dev_gold.sql
+  --model_type base \
+  --base_model_id /path/to/Qwen3.5-4B \
+  --datasets Spider,CSpider,Bird,DuSQL \
+  --etype all
 ```
 
 ### 支持的模型
 
-- **Qwen3-4B-Instruct**: 轻量级，推理速度快
-- **Qwen3-8B-Instruct**: 性能与速度平衡
-- **Qwen3-VL-8B-Instruct**: 视觉-语言支持（未来功能）
+- **Qwen3.5-4B**: 当前默认模型，用于训练、推理、评测和 Streamlit 应用
+- **Qwen3.5 LoRA/DoRA checkpoints**: 支持重新基于 Qwen3.5 微调后的适配器
 
 ### 支持的数据集
 
@@ -378,4 +400,3 @@ MIT License - 详见LICENSE文件
 ### 贡献
 
 欢迎提交Pull Request！
-

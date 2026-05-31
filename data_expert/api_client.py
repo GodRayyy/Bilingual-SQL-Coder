@@ -1,6 +1,6 @@
 """
 双语数据处理专家 - 通义千问API客户端
-Qwen3 API Client for Bilingual Data Processing Expert
+Qwen API Client for Bilingual Data Processing Expert
 """
 
 import os
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class QwenClient:
-    """通义千问Qwen3 API客户端"""
+    """通义千问 Qwen API 客户端"""
     
     def __init__(self, api_key: str = None, base_url: str = None):
         """
@@ -73,7 +73,7 @@ class QwenClient:
         retry: int = None
     ) -> str:
         """
-        调用Qwen3 API
+        调用 Qwen API
         
         Args:
             messages: 对话消息列表

@@ -230,7 +230,11 @@ class JSONDatabaseBuilder:
 
 def test_database_creation():
     """测试数据库创建"""
-    base_dir = "/data0/dywang/Llm/Text2Sql/data_collected"
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = os.getenv(
+        "BILINGUAL_SQL_CODER_DATA_COLLECTED_DIR",
+        os.path.join(project_root, "data_collected")
+    )
     
     with JSONDatabaseBuilder() as builder:
         # 测试DuSQL

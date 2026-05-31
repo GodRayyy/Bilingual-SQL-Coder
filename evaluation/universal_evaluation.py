@@ -21,7 +21,11 @@ except ImportError:
     print("⚠️  提示: 未安装sqlparse，将使用基础标准化方法。建议安装: pip install sqlparse")
 
 # 尝试导入Spider官方评测器
-SPIDER_EVAL_DIR = "/data0/dywang/Llm/Text2Sql/data_collected/spider/eval"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SPIDER_EVAL_DIR = os.getenv(
+    "SPIDER_EVAL_DIR",
+    os.path.join(PROJECT_ROOT, "data_collected", "spider", "eval")
+)
 HAS_SPIDER_EVAL = False
 try:
     if os.path.exists(SPIDER_EVAL_DIR):

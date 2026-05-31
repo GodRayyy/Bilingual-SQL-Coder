@@ -3,10 +3,10 @@
 
 # Core dependencies
 torch>=2.0.0
-transformers>=4.30.0
+transformers>=4.57.0  # Qwen3.5 AutoProcessor/AutoModelForImageTextToText support
 
 # Model training and inference
-peft>=0.5.0  # LoRA and DoRA support
+peft>=0.13.0  # LoRA and DoRA support for newer model architectures
 accelerate>=0.20.0  # Multi-GPU training
 bitsandbytes>=0.40.0  # 8-bit optimization
 
@@ -32,4 +32,3 @@ swift  # Alibaba SWIFT for efficient training
 
 # Optional: Concurrent processing
 # concurrent.futures is built-in Python module
-

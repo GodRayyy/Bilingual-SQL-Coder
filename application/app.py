@@ -114,12 +114,12 @@ def delete_chat(chat_id):
 with st.sidebar:
     # 顶部 Logo 区域
     st.title("🕸️ Bilingual-SQL-Coder")
-    st.markdown("Based on **Qwen3-4B-DoRA**")
+    st.markdown("Based on **Qwen3.5-4B**")
     
     # 状态指示器
     with st.spinner("正在唤醒模型..."):
         try:
-            model, tokenizer = model_utils.load_model_and_tokenizer()
+            model, processor = model_utils.load_model_and_tokenizer()
             st.success(f"🟢 系统在线 (GPU {settings.CUDA_DEVICE})")
         except Exception as e:
             st.error(f"🔴 模型离线: {e}")
@@ -306,7 +306,7 @@ if prompt := st.chat_input("在此输入你的业务问题..."):
                 
                 # 步骤 B: 生成 SQL
                 status_container.markdown("🧠 *正在构建 SQL 逻辑...*")
-                generated_text = model_utils.generate_sql_query(model, tokenizer, prompt, schema)
+                generated_text = model_utils.generate_sql_query(model, processor, prompt, schema)
                 
                 # 清除状态文字
                 status_container.empty()
