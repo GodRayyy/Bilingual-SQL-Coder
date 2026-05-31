@@ -360,15 +360,24 @@ class StructuredSQLConverter:
 def test_converter():
     """测试转换器"""
     converter = StructuredSQLConverter()
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_collected_dir = os.getenv(
+        "BILINGUAL_SQL_CODER_DATA_COLLECTED_DIR",
+        os.path.join(project_root, "data_collected")
+    )
+    output_dir = os.getenv(
+        "BILINGUAL_SQL_CODER_EVAL_OUTPUT_DIR",
+        os.path.join(project_root, "evaluation_outputs")
+    )
     
     # 测试WikiSQL转换
     print("\n" + "="*80)
     print("测试WikiSQL转换")
     print("="*80)
     
-    wikisql_dev = "/data0/dywang/Llm/Text2Sql/data_collected/WikiSQL/data/dev.jsonl"
-    wikisql_tables = "/data0/dywang/Llm/Text2Sql/data_collected/WikiSQL/data/dev.tables.jsonl"
-    wikisql_output = "/data0/tygao/classes/text2sql/evaluation/test_wikisql_gold.sql"
+    wikisql_dev = os.path.join(data_collected_dir, "WikiSQL", "data", "dev.jsonl")
+    wikisql_tables = os.path.join(data_collected_dir, "WikiSQL", "data", "dev.tables.jsonl")
+    wikisql_output = os.path.join(output_dir, "test_wikisql_gold.sql")
     
     if os.path.exists(wikisql_dev) and os.path.exists(wikisql_tables):
         converter.convert_wikisql_file(wikisql_dev, wikisql_tables, wikisql_output)
@@ -388,9 +397,9 @@ def test_converter():
     print("测试AntSQL转换")
     print("="*80)
     
-    antsql_dev = "/data0/dywang/Llm/Text2Sql/data_collected/antsql1/antsql1_dev.jsonl"
-    antsql_tables = "/data0/dywang/Llm/Text2Sql/data_collected/antsql1/antsql1_fundTable.xlsx"
-    antsql_output = "/data0/tygao/classes/text2sql/evaluation/test_antsql_gold.sql"
+    antsql_dev = os.path.join(data_collected_dir, "antsql1", "antsql1_dev.jsonl")
+    antsql_tables = os.path.join(data_collected_dir, "antsql1", "antsql1_fundTable.xlsx")
+    antsql_output = os.path.join(output_dir, "test_antsql_gold.sql")
     
     if os.path.exists(antsql_dev) and os.path.exists(antsql_tables):
         converter.convert_antsql_file(antsql_dev, antsql_tables, antsql_output)

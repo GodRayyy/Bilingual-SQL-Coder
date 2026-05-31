@@ -25,37 +25,43 @@
 
 # 指定使用哪几张显卡 (例如 "0" 或 "0,1,2,3")
 export CUDA_VISIBLE_DEVICES=4
+BASE_MODEL_ID="${BILINGUAL_SQL_CODER_MODEL_PATH:-Qwen/Qwen3.5-4B}"
+QWEN35_ADAPTER_DIR="${BILINGUAL_SQL_CODER_ADAPTER_PATH:-}"
 
 # ==================== 评测所有7个数据集 ====================
-# 评测微调模型 - 所有数据集（推理+评测）
+# 评测 Qwen3.5 微调模型 - 所有数据集（推理+评测）
 # 说明：
 #   - Spider, CSpider, Bird, DuSQL, Chase: 完整评测（Exact Match + Execution Accuracy）
 #   - WikiSQL, AntSQL: 仅推理（SQL格式为结构化数据，暂不支持直接评测）
 # python run_full_evaluation.py \
 #     --model_type tuned \
-#     --checkpoint_dir /data0/dywang/Llm/Text2Sql/train_output/output_dora_optimized_all_4/v4-20251219-200806/checkpoint-2700 \
+#     --base_model_id "$BASE_MODEL_ID" \
+#     --checkpoint_dir "$QWEN35_ADAPTER_DIR" \
 #     --datasets all \
 #     --etype all
 
 # ==================== 其他示例 ====================
 
-# 1. 只评测有完整评测支持的数据集（Spider, CSpider, Bird, DuSQL）
+# 1. 默认评测 Qwen3.5 基座模型（Spider, CSpider, Bird, DuSQL）
 python run_full_evaluation.py \
-    --model_type tuned \
-    --checkpoint_dir /data0/dywang/Llm/Text2Sql/train_output/output_dora_optimized_all/v5-20251214-005056/checkpoint-3300 \
+    --model_type base \
+    --base_model_id "$BASE_MODEL_ID" \
     --datasets Spider,CSpider,Bird,DuSQL \
     --etype all
 
-# # 2. 评测基础模型（Spider,CSpider,Bird,DuSQL）
+# # 2. 评测基于 Qwen3.5 重新微调的模型（Spider,CSpider,Bird,DuSQL）
 # python run_full_evaluation.py \
-#     --model_type base \
+#     --model_type tuned \
+#     --base_model_id "$BASE_MODEL_ID" \
+#     --checkpoint_dir "$QWEN35_ADAPTER_DIR" \
 #     --datasets Spider,CSpider,Bird,DuSQL \
 #     --etype all
 
 # # 3. 只做推理，不评测
 # python run_full_evaluation.py \
 #     --model_type tuned \
-#     --checkpoint_dir /data0/dywang/Llm/Text2Sql/train_output/output_dora_optimized_all_4/v4-20251219-200806/checkpoint-2700 \
+#     --base_model_id "$BASE_MODEL_ID" \
+#     --checkpoint_dir "$QWEN35_ADAPTER_DIR" \
 #     --datasets Bird,WikiSQL,Chase,DuSQL,AntSQL \
 #     --etype all
 
@@ -68,13 +74,15 @@ python run_full_evaluation.py \
 # # 5. 只评测英文数据集
 # python run_full_evaluation.py \
 #     --model_type tuned \
-#     --checkpoint_dir /data0/dywang/Llm/Text2Sql/train_output/output_dora_optimized_all_4/v4-20251219-200806/checkpoint-2700 \
+#     --base_model_id "$BASE_MODEL_ID" \
+#     --checkpoint_dir "$QWEN35_ADAPTER_DIR" \
 #     --datasets Spider,Bird \
 #     --etype all
 
 # # 6. 只评测中文数据集
 # python run_full_evaluation.py \
 #     --model_type tuned \
-#     --checkpoint_dir /data0/dywang/Llm/Text2Sql/train_output/output_dora_optimized_all_4/v4-20251219-200806/checkpoint-2700 \
+#     --base_model_id "$BASE_MODEL_ID" \
+#     --checkpoint_dir "$QWEN35_ADAPTER_DIR" \
 #     --datasets CSpider,Chase,DuSQL \
 #     --etype all

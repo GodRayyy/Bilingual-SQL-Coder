@@ -43,7 +43,11 @@ import pandas as pd
 from io import StringIO
 from tqdm import tqdm
 from peft import PeftModel, PeftConfig
-from transformers import AutoTokenizer, BitsAndBytesConfig, AutoModelForCausalLM
+from transformers import AutoProcessor, BitsAndBytesConfig
+try:
+    from transformers import AutoModelForImageTextToText
+except ImportError:
+    AutoModelForImageTextToText = None
 
 # 尝试导入 swift，如果失败则使用 transformers 的 set_seed
 try:
@@ -52,10 +56,11 @@ except ImportError:
     from transformers import set_seed as seed_everything
 
 # ================= 配置路径 =================
-BASE_DIR = "/data0/dywang/Llm/Text2Sql"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.getenv("BILINGUAL_SQL_CODER_DATA_ROOT", PROJECT_ROOT)
 DATA_COLLECTED_DIR = os.path.join(BASE_DIR, "data_collected")
 EVAL_SCRIPT_DIR = os.path.join(DATA_COLLECTED_DIR, "spider/eval")
-BASE_MODEL_ID = "/data0/tygao/models/Qwen3-4B-Instruct-2507"
+BASE_MODEL_ID = os.getenv("BILINGUAL_SQL_CODER_MODEL_PATH", "Qwen/Qwen3.5-4B")
 
 # 数据集配置字典 - 支持7个数据集
 DATASET_CONFIGS = {
@@ -113,7 +118,10 @@ DATASET_CONFIGS = {
         "language": "zh",
         "dev_file": os.path.join(DATA_COLLECTED_DIR, "DuSQL/dev.json"),
         "tables_file": os.path.join(DATA_COLLECTED_DIR, "DuSQL/db_schema.json"),
-        "db_dir": "/data0/tygao/classes/text2sql/evaluation/temp_databases/dusql_databases",  # 使用已构建的数据库
+        "db_dir": os.getenv(
+            "DUSQL_DB_PATH",
+            os.path.join(PROJECT_ROOT, "evaluation", "temp_databases", "dusql_databases")
+        ),  # 使用已构建的数据库
         "db_schema_file": os.path.join(DATA_COLLECTED_DIR, "DuSQL/db_schema.json"),
         "db_content_file": os.path.join(DATA_COLLECTED_DIR, "DuSQL/db_content.json"),
         "gold_sql": os.path.join(DATA_COLLECTED_DIR, "DuSQL/gold_dev.sql"),
@@ -279,6 +287,106 @@ def find_latest_checkpoint(checkpoint_dir):
     print(f"✅ 从父目录找到最新checkpoint：{latest_ckpt}")
     return latest_ckpt
 
+
+def get_text_tokenizer(processor):
+    """Return the text tokenizer from a Qwen3.5 processor."""
+    return getattr(processor, "tokenizer", processor)
+
+
+def prepare_qwen35_inputs(processor, messages, device, max_length=4096):
+    """Build text-only Qwen3.5 inputs with the native chat template."""
+    try:
+        inputs = processor.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+            truncation=True,
+            max_length=max_length,
+            enable_thinking=False,
+        )
+    except TypeError:
+        inputs = processor.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+            truncation=True,
+            max_length=max_length,
+        )
+    return inputs.to(device)
+
+
+def decode_qwen35_response(processor, generated_ids):
+    """Decode generated token ids with either processor or tokenizer APIs."""
+    if hasattr(processor, "batch_decode"):
+        return processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    return processor.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+
+def clean_sql_output(response):
+    """Remove Qwen thinking tags and Markdown fences from generated SQL."""
+    cleaned_sql = response.strip()
+    if "</think>" in cleaned_sql:
+        cleaned_sql = cleaned_sql.split("</think>", 1)[1].strip()
+    cleaned_sql = cleaned_sql.replace("<think>", "").replace("</think>", "").strip()
+    if "```sql" in cleaned_sql:
+        cleaned_sql = cleaned_sql.split("```sql", 1)[1].split("```", 1)[0].strip()
+    elif "```" in cleaned_sql:
+        cleaned_sql = cleaned_sql.split("```", 1)[1].split("```", 1)[0].strip()
+    return cleaned_sql.replace('\n', ' ').strip()
+
+
+def load_qwen35_model(base_model_id, model_type, checkpoint_dir):
+    """Load Qwen3.5 base model and optional Qwen3.5 LoRA/DoRA adapter."""
+    if AutoModelForImageTextToText is None:
+        raise ImportError(
+            "当前 transformers 版本不支持 Qwen3.5。"
+            "请升级到支持 AutoModelForImageTextToText 的版本（建议 >=4.57）。"
+        )
+
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=False,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_use_double_quant=False,
+    )
+    model_kwargs = {
+        'device_map': 'auto',
+        'dtype': torch.bfloat16,
+        'quantization_config': bnb_config,
+        'trust_remote_code': True,
+        'low_cpu_mem_usage': True
+    }
+
+    print("\n=== 加载 Qwen3.5 模型 ===")
+    processor = AutoProcessor.from_pretrained(base_model_id, trust_remote_code=True)
+    model = AutoModelForImageTextToText.from_pretrained(base_model_id, **model_kwargs)
+
+    if model_type == 'tuned':
+        if not checkpoint_dir:
+            raise ValueError("❌ 使用tuned模式必须指定Qwen3.5 LoRA/DoRA权重目录")
+
+        ckpt_path = find_latest_checkpoint(checkpoint_dir)
+        print(f"LoRA/DoRA权重路径：{ckpt_path}")
+
+        _ = PeftConfig.from_pretrained(ckpt_path)
+        model = PeftModel.from_pretrained(
+            model,
+            ckpt_path,
+            device_map='auto',
+            dtype=torch.bfloat16,
+            trust_remote_code=True
+        )
+        print("✅ 微调模型（Qwen3.5基座+LoRA/DoRA）加载完成")
+    else:
+        print("✅ Qwen3.5基础模型加载完成")
+
+    model.eval()
+    return model, processor
+
 # ================= 推理逻辑 =================
 
 def generate_gold_sql_for_chase(dev_file, output_gold_file):
@@ -356,7 +464,7 @@ def load_dev_data(dev_file, is_jsonl=False, is_multi_turn=False):
     
     return data
 
-def run_inference(model_type, checkpoint_dir, output_file, dataset_name, dataset_config):
+def run_inference(model_type, checkpoint_dir, output_file, dataset_name, dataset_config, base_model_id=BASE_MODEL_ID):
     """统一的推理函数，支持所有数据集"""
     seed_everything(42)
     
@@ -367,49 +475,13 @@ def run_inference(model_type, checkpoint_dir, output_file, dataset_name, dataset
     is_multi_turn = dataset_config.get('is_multi_turn', False)
     
     print(f"\n=== 开始推理 [{dataset_name}] ({language.upper()}) ===")
-    print(f"基座模型路径：{BASE_MODEL_ID}")
+    print(f"基座模型路径：{base_model_id}")
     print(f"模型类型：{model_type}")
     if model_type == 'tuned':
         print(f"LoRA checkpoint目录：{checkpoint_dir}")
-    
-    # 模型加载配置
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=False,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
-        bnb_4bit_use_double_quant=False,
-    )
-    model_kwargs = {
-        'device_map': 'auto',
-        'dtype': torch.bfloat16,
-        'quantization_config': bnb_config,
-        'trust_remote_code': True,
-        'low_cpu_mem_usage': True
-    }
 
-    print("\n=== 加载模型 ===")
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL_ID, trust_remote_code=True)
-    
-    if model_type == 'base':
-        model = AutoModelForCausalLM.from_pretrained(BASE_MODEL_ID, **model_kwargs)
-        print("✅ 基础模型加载完成")
-    else:
-        if not checkpoint_dir:
-            raise ValueError("❌ 使用tuned模式必须指定LoRA权重目录")
-            
-        ckpt_path = find_latest_checkpoint(checkpoint_dir)
-        print(f"LoRA权重路径：{ckpt_path}")
-        
-        peft_config = PeftConfig.from_pretrained(ckpt_path)
-        model = AutoModelForCausalLM.from_pretrained(BASE_MODEL_ID, **model_kwargs)
-        model = PeftModel.from_pretrained(
-            model,
-            ckpt_path,
-            device_map='auto',
-            dtype=torch.bfloat16,
-            trust_remote_code=True
-        )
-        print("✅ 微调模型（基座+LoRA）加载完成")
+    model, processor = load_qwen35_model(base_model_id, model_type, checkpoint_dir)
+    tokenizer = get_text_tokenizer(processor)
 
     # 准备数据
     print(f"加载数据库表结构：{tables_file}")
@@ -468,26 +540,12 @@ def run_inference(model_type, checkpoint_dir, output_file, dataset_name, dataset
             {"role": "user", "content": user_content}
         ]
         
-        text_prompt = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True
-        )
-        
-        inputs = tokenizer(
-            text_prompt,
-            return_tensors="pt",
-            truncation=True,
-            max_length=4096
-        )
-        
-        input_ids = inputs['input_ids'].to(model.device)
-        attention_mask = inputs['attention_mask'].to(model.device)
+        inputs = prepare_qwen35_inputs(processor, messages, model.device, max_length=4096)
+        input_ids = inputs['input_ids']
 
         with torch.no_grad():
             generated_ids = model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
+                **inputs,
                 max_new_tokens=512,
                 pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
                 eos_token_id=tokenizer.eos_token_id,
@@ -497,14 +555,8 @@ def run_inference(model_type, checkpoint_dir, output_file, dataset_name, dataset
         
         input_len = input_ids.shape[1]
         output_ids = generated_ids[0][input_len:]
-        response = tokenizer.decode(output_ids, skip_special_tokens=True)
-        
-        cleaned_sql = response.strip()
-        if "```sql" in cleaned_sql:
-            cleaned_sql = cleaned_sql.split("```sql")[1].split("```")[0].strip()
-        elif "```" in cleaned_sql:
-            cleaned_sql = cleaned_sql.split("```")[0].strip()
-        cleaned_sql = cleaned_sql.replace('\n', ' ')
+        response = decode_qwen35_response(processor, [output_ids])
+        cleaned_sql = clean_sql_output(response)
         
         predictions.append(cleaned_sql)
     
@@ -581,13 +633,19 @@ def main():
     
     # 推理参数
     parser.add_argument("--model_type", type=str, choices=['base', 'tuned'], default='tuned', help="模型类型: base 或 tuned")
+    parser.add_argument("--base_model_id", type=str, default=BASE_MODEL_ID, help="Qwen3.5基座模型路径或Hugging Face ID")
     parser.add_argument("--checkpoint_dir", type=str, default=None, help="LoRA微调权重目录 (tuned模式必填)")
     parser.add_argument("--skip_inference", action="store_true", help="跳过推理，直接使用已有的输出文件进行评测")
     parser.add_argument("--datasets", type=str, default="Spider,CSpider", help="要测试的数据集，逗号分隔 (支持: Spider,CSpider,Bird,WikiSQL,Chase,DuSQL,AntSQL 或 all)")
     
     # 评测参数
     parser.add_argument("--etype", type=str, default="all", choices=['all', 'exec', 'match'], help="评测类型")
-    parser.add_argument("--output_dir", type=str, default="/data0/tygao/classes/text2sql/evaluation", help="输出目录")
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default=os.getenv("BILINGUAL_SQL_CODER_EVAL_OUTPUT_DIR", os.path.join(PROJECT_ROOT, "evaluation_outputs")),
+        help="输出目录"
+    )
     
     args = parser.parse_args()
     
@@ -621,6 +679,7 @@ def main():
     print(f"{'='*80}")
     print(f"将要测试的数据集: {', '.join(datasets_to_test)}")
     print(f"模型类型: {args.model_type}")
+    print(f"基座模型: {args.base_model_id}")
     print(f"模型标识: {model_identifier}")
     if args.model_type == 'tuned':
         print(f"Checkpoint: {args.checkpoint_dir}")
@@ -717,7 +776,8 @@ def main():
                     checkpoint_dir=args.checkpoint_dir,
                     output_file=output_file,
                     dataset_name=dataset_name,
-                    dataset_config=config
+                    dataset_config=config,
+                    base_model_id=args.base_model_id
                 )
                 print(f"✅ {dataset_name} 推理完成，生成 {num_samples} 条SQL")
             except Exception as e:

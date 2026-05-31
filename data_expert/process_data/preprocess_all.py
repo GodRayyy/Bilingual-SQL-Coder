@@ -6,8 +6,8 @@ import pandas as pd # 仅用于依赖检查
 
 # ================= 配置区域 =================
 
-DATA_SOURCE_DIR = "/amax/home/dywang/Llm/Text2Sql/data_collected"
 CURRENT_WORK_DIR = os.path.abspath(".")
+DATA_SOURCE_DIR = os.getenv("BILINGUAL_SQL_CODER_DATA_COLLECTED_DIR", os.path.join(CURRENT_WORK_DIR, "data_collected"))
 OUTPUT_DIR = os.path.join(CURRENT_WORK_DIR, "processed_output_messages")
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
