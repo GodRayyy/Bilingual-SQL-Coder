@@ -201,6 +201,10 @@ If you use Bilingual-SQL-Coder in your research, please cite:
 
 MIT License - see LICENSE file for details
 
+### Acknowledgements
+
+This project was maintained and refactored with assistance from OpenAI Codex. Codex helped with code migration, repository cleanup, documentation updates, and Qwen3.5 compatibility adaptation, improving the efficiency of ongoing open-source maintenance.
+
 ### Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -396,6 +400,10 @@ python run_full_evaluation.py \
 ### License
 
 MIT License - 详见LICENSE文件
+
+### 致谢
+
+本项目在维护和重构过程中得到了 OpenAI Codex 的协助，包括代码迁移、仓库清理、文档更新以及 Qwen3.5 适配等工作。感谢 Codex 帮助提升项目维护效率。
 
 ### 贡献
 
